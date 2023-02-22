@@ -1,6 +1,11 @@
 package com.example.chatapp.ui.chatsScreen
 
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -10,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,19 +27,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 
 import com.example.mychatapp.ui.chatsScreen.ChatScreenViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 
-
-/**
- * The home view which will contain all the code related to the view for HOME.
- *
- * Here we will show the list of chat messages sent by user.
- * And also give an option to send a message and logout.
- */
 
 @Destination
 @Composable
@@ -43,6 +43,14 @@ fun ChatsScreen(
     homeViewModel: ChatScreenViewModel = viewModel()
 
 ) {
+    var imageUri by remember {
+        mutableStateOf<Uri?>(null)
+    }
+    val imageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> imageUri = uri }
+    )
+
     val listState = rememberLazyListState()
     LaunchedEffect(homeViewModel.message.size) {
         if (!listState.isScrolledToTheEnd()) {
@@ -89,13 +97,38 @@ fun ChatsScreen(
 
             items(messages) { message ->
                 currentUser = message.from ==  username
-                SingleMessage(
-                    message = message.content,
-                    isCurrentUser = currentUser,
-                    username = message.from
-                )
+                message.content?.let {
+                    SingleMessage(
+                        message = it,
+                        isCurrentUser = currentUser,
+                        username = message.from,
+                        image = imageUri
+                    )
+                }
             }
         }
+        Row(
+            verticalAlignment  = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ){
+
+
+        Spacer(modifier = Modifier .width(2.dp))
+        IconButton(
+            onClick = {
+                imageLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                homeViewModel.sendMessage("emptyString",imageUri)
+//
+
+            }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Message add"
+            )
+        }
+
         OutlinedTextField(
             value = text,
             onValueChange = {
@@ -118,8 +151,7 @@ fun ChatsScreen(
             trailingIcon = {
                 IconButton(
                     onClick = {
-                        homeViewModel.sendMessage(text.text)
-
+                        homeViewModel.sendMessage(text.text,null)
                     }
                 ) {
                     Icon(
@@ -127,31 +159,46 @@ fun ChatsScreen(
                         contentDescription = "Send Button"
                     )
                 }
+
             }
         )
-    }
+    }}
 }
 
 
 @Composable
-fun SingleMessage(message: String, isCurrentUser: Boolean, username: String) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        backgroundColor = if (isCurrentUser) MaterialTheme.colors.primary else Color.White
-    ) {
-        Text(
-            text = message,
-            textAlign =
-            if (isCurrentUser)
-                TextAlign.End
-            else
-                TextAlign.Start,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            color = if (!isCurrentUser) MaterialTheme.colors.primary else Color.White
-        )
+fun SingleMessage(message: String, isCurrentUser: Boolean, username: String, image: Uri?) {
+    if(message != "emptyString") {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            backgroundColor = if (isCurrentUser) MaterialTheme.colors.primary else Color.White
+        ) {
+            Text(
+                text = message,
+                textAlign =
+                if (isCurrentUser)
+                    TextAlign.End
+                else
+                    TextAlign.Start,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                color = if (!isCurrentUser) MaterialTheme.colors.primary else Color.White
+            )
+        }
+    }else{
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            backgroundColor = if (isCurrentUser) MaterialTheme.colors.primary else Color.White
+        ){
+            AsyncImage(
+                model = image,
+                contentDescription = "image"
+            )
+        }
+
     }
+
     Spacer(modifier = Modifier . height(5.dp))
     if(!isCurrentUser){
         Row(

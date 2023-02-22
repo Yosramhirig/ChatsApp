@@ -152,6 +152,7 @@ fun SigninScreen(
                                                 ).show()
 
                                             } else {
+                                                task.exception?.printStackTrace()
                                                 Toast.makeText(
                                                     context, ">:(",
                                                     Toast.LENGTH_SHORT

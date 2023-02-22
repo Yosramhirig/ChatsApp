@@ -1,7 +1,7 @@
 package com.example.mychatapp.ui.chatsScreen
 
 import android.content.ContentValues.TAG
-import android.nfc.Tag
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +12,6 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import javax.inject.Inject
 
@@ -41,7 +40,8 @@ class ChatScreenViewModel  @Inject constructor (): ViewModel() {
                 snapshot.children.forEach {msg ->
                    val from = msg.child("from").getValue(String::class.java).toString()
                     val content = msg.child("content").getValue(String::class.java).toString()
-                    val conversation =Message(from, content)
+                    val uri = msg.child("image").getValue(Uri::class.java)
+                    val conversation =Message(from, content, uri)
                     messages.add(conversation)
                 }
                 message = messages
@@ -57,12 +57,20 @@ class ChatScreenViewModel  @Inject constructor (): ViewModel() {
         Log.d("Tag", postListener.toString())
     }
 
-    fun sendMessage(msg : String) {
-        if(msg.isNotBlank()){
-            val newmsgref = reference.push()
-            val newmsg = Message(username, msg)
-            newmsgref.setValue(newmsg)
-            Log.d("Tag", newmsg.toString())
+    fun sendMessage(msg : String?, uri: Uri?) {
+        if (msg != null) {
+            if(msg.isNotBlank()){
+                val newmsgref = reference.push()
+                val newmsg = Message(username, msg,null)
+                newmsgref.setValue(newmsg)
+                Log.d("Tag", newmsg.toString())
+            }
+            }else{
+            if(uri != null){
+                val newmsgref = reference.push()
+                val newmsg = Message(username, "emptyString",uri)
+                newmsgref.setValue(newmsg)
+            }
         }
     }
 }
